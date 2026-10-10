@@ -248,8 +248,11 @@ def _user_target(args: Dict[str, Any]) -> Dict[str, Any]:
     username = args.get("username")
     if user_id:
         return {"user_id": user_id}
-    if isinstance(username, str) and username.strip().lstrip("@"):
-        return {"username": username.strip().lstrip("@")}
+    if isinstance(username, str):
+        handle = username.strip()
+        handle = handle[1:].strip() if handle.startswith("@") else handle
+        if handle:
+            return {"username": handle}
     raise ValueError("Provide either user_id or username.")
 
 
