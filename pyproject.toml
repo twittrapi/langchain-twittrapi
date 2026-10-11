@@ -5,13 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "langchain-twittrapi"
 version = "0.2.0"
-description = "LangChain tools for TwittrAPI: read X (Twitter) users, tweets, search, lists, communities and trends from your agents."
+description = "LangChain tools for TwittrAPI: read public Twitter/X tweets, profiles, followers and search results. Pay as you go from $0.065 per 1,000 calls."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10,<4.0"
 authors = [{ name = "TwittrAPI" }]
-keywords = ["langchain", "twitter", "x", "tools", "agents", "twittrapi"]
+keywords = ["twitter api", "x api", "twitter scraper", "tweets", "twitter search", "twitter followers", "social media data", "twittrapi", "langchain", "langgraph", "ai-agents"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
