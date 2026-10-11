@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-twittrapi"
-version = "0.1.0"
+version = "0.2.0"
 description = "LangChain tools for TwittrAPI: read X (Twitter) users, tweets, search, lists, communities and trends from your agents."
 readme = "README.md"
 license = "MIT"
