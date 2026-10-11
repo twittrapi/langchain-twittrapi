@@ -108,7 +108,18 @@ result = await agent.ainvoke({"messages": [{"role": "user", "content": "Trending
 
 ## What the tools return
 
-The tools return X's raw JSON as compact text. Responses can be large, so each result is cut at `max_chars` characters (default 20,000). When that happens the text ends with a `[TRUNCATED: ...]` marker that says how much was cut.
+The tools return the API's [simple format](https://twittrapi.com/docs/simple-format) as compact JSON text: flat, camelCase tweets and users with a fixed schema (`id`, `text`, `author`, `counts`, `media`, ...). It uses far fewer tokens than X's raw JSON. Lists come as `{"data": [...], "nextCursor": ..., "previousCursor": ..., "hasNextPage": ...}`, single objects as `{"data": {...}}`.
+
+For X's raw JSON (every field X sends: cards, polls, edit history, ...), opt out per toolkit or per tool:
+
+```python
+TwittrAPIToolkit(api_response_format="raw")
+GetTweetTool(api_response_format="raw")
+```
+
+(The option is named `api_response_format` because LangChain tools already have a `response_format` field.)
+
+Responses can be large, so each result is cut at `max_chars` characters (default 20,000). When that happens the text ends with a `[TRUNCATED: ...]` marker that says how much was cut.
 
 Paginated tools print the next-page cursor on the first line, before the JSON, so it is never lost to truncation:
 
@@ -116,8 +127,10 @@ Paginated tools print the next-page cursor on the first line, before the JSON, s
 next_cursor: DAABCgABF...
 Pass next_cursor as `cursor` to get the next page.
 
-{"data":{...}}
+{"data":[...],"nextCursor":"DAABCgABF...","previousCursor":"...","hasNextPage":true}
 ```
+
+On the last page (`hasNextPage` is false) the first line says so instead.
 
 Change the limit per toolkit or per tool:
 

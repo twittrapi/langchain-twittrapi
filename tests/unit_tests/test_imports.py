@@ -3,6 +3,8 @@ import langchain_twittrapi
 EXPECTED_ALL = [
     "__version__",
     "DEFAULT_MAX_CHARS",
+    "DEFAULT_API_RESPONSE_FORMAT",
+    "ApiResponseFormat",
     "TwittrAPIToolkit",
     "TwittrAPIBaseTool",
     "GetUserByUsernameTool",

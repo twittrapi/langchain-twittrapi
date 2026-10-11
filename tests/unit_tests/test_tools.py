@@ -60,7 +60,7 @@ def test_sync_argument_passing(
     out = tool.invoke(args)
     assert api.last.method == "GET"
     assert api.last.url.path == path
-    assert query(api.last) == params
+    assert query(api.last) == {**params, "format": "simple"}  # simple is the default
     if paginated:
         assert out.startswith("next_cursor: NEXT_CURSOR_123")
     else:
@@ -76,7 +76,7 @@ async def test_async_argument_passing(
     assert tool.client is None
     out = await tool.ainvoke(args)
     assert api.last.url.path == path
-    assert query(api.last) == params
+    assert query(api.last) == {**params, "format": "simple"}  # simple is the default
     assert ("next_cursor: NEXT_CURSOR_123" in out) == paginated
 
 

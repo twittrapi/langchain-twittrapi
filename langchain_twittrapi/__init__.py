@@ -8,6 +8,8 @@ from importlib import metadata
 from langchain_twittrapi._output import DEFAULT_MAX_CHARS
 from langchain_twittrapi.toolkits import TwittrAPIToolkit
 from langchain_twittrapi.tools import (
+    DEFAULT_API_RESPONSE_FORMAT,
+    ApiResponseFormat,
     GetCommunityTweetsTool,
     GetFollowersTool,
     GetFollowingTool,
@@ -33,6 +35,8 @@ del metadata
 __all__ = [
     "__version__",
     "DEFAULT_MAX_CHARS",
+    "DEFAULT_API_RESPONSE_FORMAT",
+    "ApiResponseFormat",
     "TwittrAPIToolkit",
     "TwittrAPIBaseTool",
     "GetUserByUsernameTool",

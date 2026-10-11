@@ -10,6 +10,8 @@ from twittrapi import AsyncTwittrAPI, TwittrAPI, TwittrAPIError
 
 from ._output import DEFAULT_MAX_CHARS
 from .tools import (
+    DEFAULT_API_RESPONSE_FORMAT,
+    ApiResponseFormat,
     GetCommunityTweetsTool,
     GetFollowersTool,
     GetFollowingTool,
@@ -66,6 +68,7 @@ class TwittrAPIToolkit(BaseToolkit):
             toolkit = TwittrAPIToolkit()                      # key from the environment
             toolkit = TwittrAPIToolkit(api_key="...")         # direct API key
             toolkit = TwittrAPIToolkit(rapidapi_key="...")    # RapidAPI key
+            toolkit = TwittrAPIToolkit(api_response_format="raw")  # X's raw JSON
 
     Tools:
         .. code-block:: python
@@ -86,6 +89,9 @@ class TwittrAPIToolkit(BaseToolkit):
     """A ``twittrapi.AsyncTwittrAPI`` instance. Built from the keys when neither client is given."""
     max_chars: int = Field(default=DEFAULT_MAX_CHARS, ge=100)
     """Maximum characters of JSON each tool returns to the model."""
+    api_response_format: ApiResponseFormat = DEFAULT_API_RESPONSE_FORMAT
+    """``"simple"`` (default): the API's compact format, far fewer tokens. ``"raw"``: X's raw
+    JSON with every field. Passed to every tool."""
 
     def model_post_init(self, context: Any) -> None:
         super().model_post_init(context)
@@ -116,7 +122,12 @@ class TwittrAPIToolkit(BaseToolkit):
                     f"Available: {', '.join(self.tool_names())}"
                 )
         return [
-            cls(client=self.client, async_client=self.async_client, max_chars=self.max_chars)
+            cls(
+                client=self.client,
+                async_client=self.async_client,
+                max_chars=self.max_chars,
+                api_response_format=self.api_response_format,
+            )
             for cls in TOOL_CLASSES
             if names is None or cls.model_fields["name"].default in names
         ]

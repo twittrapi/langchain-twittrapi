@@ -1,8 +1,10 @@
 """LangChain tools for TwittrAPI (https://twittrapi.com), a read API for X (Twitter) data.
 
-Every tool is read-only and calls the official ``twittrapi`` SDK. Results are X's raw JSON,
-cut to ``max_chars`` characters. Paginated tools print ``next_cursor`` first so the agent can
-ask for the next page.
+Every tool is read-only and calls the official ``twittrapi`` SDK. Results are the API's
+compact simple format by default (flat, camelCase tweets and users, far fewer tokens than X's
+raw JSON; https://twittrapi.com/docs/simple-format). Set ``api_response_format="raw"`` for X's
+raw JSON. Output is cut to ``max_chars`` characters. Paginated tools print ``next_cursor``
+first so the agent can ask for the next page.
 """
 
 from __future__ import annotations
@@ -17,7 +19,12 @@ from twittrapi import AsyncTwittrAPI, TwittrAPI, TwittrAPIError
 
 from ._output import DEFAULT_MAX_CHARS, format_result
 
+ApiResponseFormat = Literal["simple", "raw"]
+DEFAULT_API_RESPONSE_FORMAT: ApiResponseFormat = "simple"
+
 __all__ = [
+    "ApiResponseFormat",
+    "DEFAULT_API_RESPONSE_FORMAT",
     "TwittrAPIBaseTool",
     "GetUserByUsernameTool",
     "GetUserByIdTool",
@@ -170,6 +177,12 @@ class TwittrAPIBaseTool(BaseTool):
     """A ``twittrapi.AsyncTwittrAPI`` instance. Built from the keys on first async call when not given."""
     max_chars: int = Field(default=DEFAULT_MAX_CHARS, ge=100)
     """Maximum characters of JSON returned to the model. Longer output is cut with a marker."""
+    api_response_format: ApiResponseFormat = DEFAULT_API_RESPONSE_FORMAT
+    """``"simple"`` (default): the API's compact format (``format=simple``), flat camelCase
+    objects with ``nextCursor``/``hasNextPage``, far fewer tokens. ``"raw"``: X's raw GraphQL
+    JSON with every field X sends. Sent on every call, whatever the client's own default.
+    (Named ``api_response_format`` because LangChain's ``BaseTool`` already has a
+    ``response_format`` field.)"""
 
     handle_tool_error: Any = True
     """API errors are returned to the model as the tool result instead of raising."""
@@ -267,7 +280,7 @@ class GetUserByUsernameTool(TwittrAPIBaseTool):
     args_schema: Type[BaseModel] = UsernameInput
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
-        return api.users.get_by_username(args["username"])
+        return api.users.get_by_username(args["username"], response_format=self.api_response_format)
 
 
 class GetUserByIdTool(TwittrAPIBaseTool):
@@ -280,7 +293,7 @@ class GetUserByIdTool(TwittrAPIBaseTool):
     args_schema: Type[BaseModel] = UserIdInput
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
-        return api.users.get_by_id(args["user_id"])
+        return api.users.get_by_id(args["user_id"], response_format=self.api_response_format)
 
 
 class GetUserTweetsTool(TwittrAPIBaseTool):
@@ -296,7 +309,8 @@ class GetUserTweetsTool(TwittrAPIBaseTool):
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
         return api.users.tweets(
-            **_user_target(args), count=args.get("count"), cursor=args.get("cursor")
+            **_user_target(args), count=args.get("count"), cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -312,7 +326,8 @@ class GetFollowersTool(TwittrAPIBaseTool):
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
         return api.users.followers(
-            **_user_target(args), count=args.get("count"), cursor=args.get("cursor")
+            **_user_target(args), count=args.get("count"), cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -326,7 +341,8 @@ class GetFollowingTool(TwittrAPIBaseTool):
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
         return api.users.following(
-            **_user_target(args), count=args.get("count"), cursor=args.get("cursor")
+            **_user_target(args), count=args.get("count"), cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -354,6 +370,7 @@ class SearchTweetsTool(TwittrAPIBaseTool):
             category=args.get("category"),
             count=args.get("count"),
             cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -370,7 +387,8 @@ class GetTweetTool(TwittrAPIBaseTool):
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
         return api.tweets.get(
-            args["tweet_id"], ranking_mode=args.get("ranking_mode"), cursor=args.get("cursor")
+            args["tweet_id"], ranking_mode=args.get("ranking_mode"), cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -384,7 +402,8 @@ class GetTweetRetweetsTool(TwittrAPIBaseTool):
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
         return api.tweets.retweeters(
-            args["tweet_id"], count=args.get("count"), cursor=args.get("cursor")
+            args["tweet_id"], count=args.get("count"), cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -397,7 +416,12 @@ class GetTweetQuotesTool(TwittrAPIBaseTool):
     paginated: ClassVar[bool] = True
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
-        return api.tweets.quotes(args["tweet_id"], count=args.get("count"), cursor=args.get("cursor"))
+        return api.tweets.quotes(
+            args["tweet_id"],
+            count=args.get("count"),
+            cursor=args.get("cursor"),
+            response_format=self.api_response_format,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -416,7 +440,12 @@ class GetListTweetsTool(TwittrAPIBaseTool):
     paginated: ClassVar[bool] = True
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
-        return api.lists.tweets(args["list_id"], count=args.get("count"), cursor=args.get("cursor"))
+        return api.lists.tweets(
+            args["list_id"],
+            count=args.get("count"),
+            cursor=args.get("cursor"),
+            response_format=self.api_response_format,
+        )
 
 
 class GetCommunityTweetsTool(TwittrAPIBaseTool):
@@ -429,7 +458,8 @@ class GetCommunityTweetsTool(TwittrAPIBaseTool):
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
         return api.communities.tweets(
-            args["community_id"], count=args.get("count"), cursor=args.get("cursor")
+            args["community_id"], count=args.get("count"), cursor=args.get("cursor"),
+            response_format=self.api_response_format,
         )
 
 
@@ -444,7 +474,10 @@ class GetTrendsTool(TwittrAPIBaseTool):
     args_schema: Type[BaseModel] = TrendsInput
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
-        return api.trends.get(args.get("location_id") or "1")
+        return api.trends.get(
+            args.get("location_id") or "1",
+            response_format=self.api_response_format,
+        )
 
 
 class GetTrendLocationsTool(TwittrAPIBaseTool):
@@ -457,4 +490,4 @@ class GetTrendLocationsTool(TwittrAPIBaseTool):
     args_schema: Type[BaseModel] = NoInput
 
     def _call(self, api: Any, args: Dict[str, Any]) -> Any:
-        return api.trends.locations()
+        return api.trends.locations(response_format=self.api_response_format)
