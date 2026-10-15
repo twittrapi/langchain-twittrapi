@@ -75,3 +75,10 @@ def test_custom_clients(api: MockAPI) -> None:
     tool = toolkit.get_tools(["get_user_by_id"])[0]
     assert tool.invoke({"user_id": "5"}) == '{"ok":true}'
     assert api.last.url.path == "/user/5"
+
+
+def test_rapidapi_host() -> None:
+    toolkit = TwittrAPIToolkit(rapidapi_key="k", rapidapi_host="twttr.p.rapidapi.com")
+    assert toolkit.client.rapidapi_host == toolkit.async_client.rapidapi_host == "twttr.p.rapidapi.com"
+    assert toolkit.client.base_url == "https://twttr.p.rapidapi.com"
+    assert TwittrAPIToolkit(rapidapi_key="k").client.rapidapi_host == "twitter-aio.p.rapidapi.com"

@@ -156,12 +156,28 @@ def _secret(value: Any) -> Optional[str]:
     return str(value)
 
 
+def _client_kwargs(
+    api_key: Any, rapidapi_key: Any, rapidapi_host: Optional[str], base_url: Optional[str]
+) -> Dict[str, Any]:
+    """Arguments for ``TwittrAPI`` / ``AsyncTwittrAPI``. ``rapidapi_host`` is only passed when
+    set, so an unset host leaves the SDK's own default and ``RAPIDAPI_HOST`` fallback."""
+    kwargs: Dict[str, Any] = {
+        "api_key": _secret(api_key),
+        "rapidapi_key": _secret(rapidapi_key),
+        "base_url": base_url,
+    }
+    if rapidapi_host:
+        kwargs["rapidapi_host"] = rapidapi_host
+    return kwargs
+
+
 class TwittrAPIBaseTool(BaseTool):
     """Shared plumbing for the TwittrAPI tools.
 
     Auth: pass ``api_key`` (direct API, https://twittrapi.com) or ``rapidapi_key`` (RapidAPI).
     With neither, the SDK reads ``TWITTRAPI_API_KEY`` and then ``RAPIDAPI_KEY`` from the
-    environment. You can also pass ready-made ``client`` (``twittrapi.TwittrAPI``) and
+    environment. ``rapidapi_host`` (or ``RAPIDAPI_HOST``) selects another TwittrAPI listing on
+    RapidAPI. You can also pass ready-made ``client`` (``twittrapi.TwittrAPI``) and
     ``async_client`` (``twittrapi.AsyncTwittrAPI``) instances.
     """
 
@@ -169,6 +185,9 @@ class TwittrAPIBaseTool(BaseTool):
     """Direct TwittrAPI key (sent as X-API-KEY)."""
     rapidapi_key: Optional[SecretStr] = Field(default=None, exclude=True)
     """RapidAPI key (sent as x-rapidapi-key)."""
+    rapidapi_host: Optional[str] = None
+    """RapidAPI host of the listing you subscribed to, e.g. ``twttr.p.rapidapi.com``. Defaults
+    to ``RAPIDAPI_HOST`` from the environment, then ``twitter-aio.p.rapidapi.com``."""
     base_url: Optional[str] = None
     """Override the API base URL. Rarely needed."""
     client: Any = Field(default=None, exclude=True)
@@ -196,9 +215,7 @@ class TwittrAPIBaseTool(BaseTool):
         if self.client is None and self.async_client is None:
             try:
                 self.client = TwittrAPI(
-                    api_key=_secret(self.api_key),
-                    rapidapi_key=_secret(self.rapidapi_key),
-                    base_url=self.base_url,
+                    **_client_kwargs(self.api_key, self.rapidapi_key, self.rapidapi_host, self.base_url)
                 )
             except TwittrAPIError as exc:
                 raise ValueError(str(exc)) from exc
@@ -228,9 +245,7 @@ class TwittrAPIBaseTool(BaseTool):
     def _get_async_client(self) -> Optional[Any]:
         if self.async_client is None and self._built_client:
             self.async_client = AsyncTwittrAPI(
-                api_key=_secret(self.api_key),
-                rapidapi_key=_secret(self.rapidapi_key),
-                base_url=self.base_url,
+                **_client_kwargs(self.api_key, self.rapidapi_key, self.rapidapi_host, self.base_url)
             )
         return self.async_client
 

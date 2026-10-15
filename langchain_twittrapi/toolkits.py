@@ -26,6 +26,7 @@ from .tools import (
     GetUserTweetsTool,
     SearchTweetsTool,
     TwittrAPIBaseTool,
+    _client_kwargs,
 )
 
 __all__ = ["TwittrAPIToolkit", "TOOL_CLASSES"]
@@ -47,10 +48,6 @@ TOOL_CLASSES: Sequence[Type[TwittrAPIBaseTool]] = (
 )
 
 
-def _secret(value: Optional[SecretStr]) -> Optional[str]:
-    return value.get_secret_value() if value is not None else None
-
-
 class TwittrAPIToolkit(BaseToolkit):
     """All TwittrAPI tools, sharing one sync and one async client.
 
@@ -68,6 +65,7 @@ class TwittrAPIToolkit(BaseToolkit):
             toolkit = TwittrAPIToolkit()                      # key from the environment
             toolkit = TwittrAPIToolkit(api_key="...")         # direct API key
             toolkit = TwittrAPIToolkit(rapidapi_key="...")    # RapidAPI key
+            toolkit = TwittrAPIToolkit(rapidapi_key="...", rapidapi_host="twttr.p.rapidapi.com")
             toolkit = TwittrAPIToolkit(api_response_format="raw")  # X's raw JSON
 
     Tools:
@@ -81,6 +79,9 @@ class TwittrAPIToolkit(BaseToolkit):
     """Direct TwittrAPI key (https://twittrapi.com)."""
     rapidapi_key: Optional[SecretStr] = Field(default=None, exclude=True)
     """RapidAPI key."""
+    rapidapi_host: Optional[str] = None
+    """RapidAPI host of the listing you subscribed to. Defaults to ``RAPIDAPI_HOST``, then
+    ``twitter-aio.p.rapidapi.com``."""
     base_url: Optional[str] = None
     """Override the API base URL. Rarely needed."""
     client: Any = Field(default=None, exclude=True)
@@ -96,11 +97,7 @@ class TwittrAPIToolkit(BaseToolkit):
     def model_post_init(self, context: Any) -> None:
         super().model_post_init(context)
         if self.client is None and self.async_client is None:
-            kwargs = {
-                "api_key": _secret(self.api_key),
-                "rapidapi_key": _secret(self.rapidapi_key),
-                "base_url": self.base_url,
-            }
+            kwargs = _client_kwargs(self.api_key, self.rapidapi_key, self.rapidapi_host, self.base_url)
             try:
                 self.client = TwittrAPI(**kwargs)
                 self.async_client = AsyncTwittrAPI(**kwargs)

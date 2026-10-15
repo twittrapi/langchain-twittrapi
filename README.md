@@ -46,6 +46,10 @@ toolkit = TwittrAPIToolkit(rapidapi_key="your-rapidapi-key") # RapidAPI
 
 If both environment variables are set, `TWITTRAPI_API_KEY` wins.
 
+Subscribed to another TwittrAPI listing on RapidAPI? Set its host:
+`TwittrAPIToolkit(rapidapi_key="...", rapidapi_host="twttr.p.rapidapi.com")`, or the
+`RAPIDAPI_HOST` environment variable.
+
 ## Quickstart
 
 ### Use one tool

@@ -245,3 +245,29 @@ def test_errors_raise_when_handling_disabled(api: MockAPI) -> None:
     tool = GetUserByIdTool(client=api.client(), handle_tool_error=False)
     with pytest.raises(ToolException, match="Invalid API key"):
         tool.invoke({"user_id": "1"})
+
+
+def test_rapidapi_host_passed_to_clients() -> None:
+    tool = GetTweetTool(rapidapi_key="k", rapidapi_host="https://twttr.p.rapidapi.com/")
+    assert tool.client.rapidapi_host == "twttr.p.rapidapi.com"
+    assert tool.client.base_url == "https://twttr.p.rapidapi.com"
+    assert tool._get_async_client().rapidapi_host == "twttr.p.rapidapi.com"
+
+
+def test_rapidapi_host_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RAPIDAPI_HOST", "twttr.p.rapidapi.com")
+    assert GetTweetTool(rapidapi_key="k").client.rapidapi_host == "twttr.p.rapidapi.com"
+
+
+def test_rapidapi_host_only_passed_when_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list = []
+    monkeypatch.setattr("langchain_twittrapi.tools.TwittrAPI", lambda **kw: seen.append(kw))
+    GetTweetTool(rapidapi_key="k")
+    GetTweetTool(rapidapi_key="k", rapidapi_host="twttr.p.rapidapi.com")
+    assert "rapidapi_host" not in seen[0]
+    assert seen[1]["rapidapi_host"] == "twttr.p.rapidapi.com"
+
+
+def test_invalid_rapidapi_host() -> None:
+    with pytest.raises(ValueError, match="rapidapi_host"):
+        GetTweetTool(rapidapi_key="k", rapidapi_host="twttr.p.rapidapi.com/path")
